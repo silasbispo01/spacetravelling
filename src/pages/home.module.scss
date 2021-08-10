@@ -1,1 +1,52 @@
-// TODO
+.container {
+  max-width: 720px;
+  margin: 5rem auto 0;
+}
+
+.posts {
+  margin: 4rem auto 0;
+
+  display: flex;
+  flex-direction: column;
+
+  a {
+    
+    h1 {
+      font-size: 1.75rem;
+      font-weight: bold;
+      margin-bottom: .5rem;
+    }
+
+    p, time, div {
+      color: var(--body);
+    }
+
+    p {
+      font-size: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    time {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 1.5rem;
+
+      font-size: 0.875rem;
+    }
+
+    div {
+      display: inline-flex;
+      align-items: center;
+
+      font-size: 0.875rem;
+    }
+
+    & + a {
+      margin: 4rem 0 3rem;
+    }
+
+    .icon {
+      margin-right: 10px;
+    }
+  }
+}

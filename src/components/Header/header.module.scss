@@ -1,1 +1,10 @@
-// TODO
+.header {
+  height: 105px;
+  width: 100%;
+  padding: 40px 0;
+
+  div {
+    max-width: 720px;
+    margin: 0 auto;
+  }
+}
