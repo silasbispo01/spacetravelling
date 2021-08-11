@@ -2,8 +2,11 @@ import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 
 import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
+import { ptBR } from 'date-fns/locale';
+import { format } from 'date-fns';
+import { RichText } from 'prismic-dom';
+import Prismic from '@prismicio/client';
 import Header from '../../components/Header';
-
 import { getPrismicClient } from '../../services/prismic';
 
 import commonStyles from '../../styles/common.module.scss';
@@ -30,40 +33,41 @@ interface PostProps {
   post: Post;
 }
 
-export default function Post(): JSX.Element {
-  // TODO
+export default function Post({ post }: PostProps): JSX.Element {
+  const { data } = post;
+  // const posts = data.content.map(postI => {
+  //   return {
+  //     heading: RichText.asText(postI.heading),
+  //     body: RichText.asHtml(postI.body),
+  //   };
+  // });
+
+  console.log(data.content)
   return (
     <>
       <Head>
-        <title>spacetravelling</title>
+        <title> | spacetravelling</title>
       </Head>
       <Header />
       <main className={styles.container}>
-        <img alt="banner" src="/banner.png" className={styles.banner} />
+        <img alt="banner" src={data.banner.url} className={styles.banner} />
         <section className={styles.post}>
-          <h1>Como utilizar hooks</h1>
+          <h1>{data.title}</h1>
           <div className={styles.info}>
             <time>
               <FiCalendar className={styles.icon} />
-              15 Mar 2021
+              {post.first_publication_date}
             </time>
             <p>
               <FiUser className={styles.icon} />
-              Joseph Oliveira
+              {data.author}
             </p>
             <p>
               <FiClock className={styles.icon} /> 4 min
             </p>
           </div>
           <article>
-            <h1>Proin et varius</h1>
-            <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
-            <p>
-              {' '}
-              Nullam dolor sapien, vulputate eu diam at, condimentum hendrerit
-              tellus. Nam facilisis sodales felis, pharetra pharetra lectus
-              auctor sed.{' '}
-            </p>
+            {/* <div dangerouslySetInnerHTML={{ _html: data.content }}> */}
           </article>
         </section>
       </main>
@@ -71,16 +75,47 @@ export default function Post(): JSX.Element {
   );
 }
 
-// export const getStaticPaths = async () => {
-//   const prismic = getPrismicClient();
-//   const posts = await prismic.query(TODO);
+export const getStaticPaths: GetStaticPaths = async () => {
+  const prismic = getPrismicClient();
+  // const posts = await prismic.query(
+  //   Prismic.Predicates.at('document.type', 'posts')
+  // );
 
-//   // TODO
-// };
+  return {
+    paths: [{ params: { slug: '/post/mapas-com-react-usando-leaflet' } }],
+    fallback: 'blocking',
+  };
+};
 
-// export const getStaticProps = async context => {
-//   const prismic = getPrismicClient();
-//   const response = await prismic.getByUID(TODO);
+export const getStaticProps: GetStaticProps = async context => {
+  const { slug } = context.params;
 
-//   // TODO
-// };
+  const prismic = getPrismicClient();
+  const response = await prismic.getByUID('posts', slug.toString(), {});
+
+  const content = response.data.content.map(item => RichText.asHtml(item.body));
+
+  const post = {
+    first_publication_date: format(
+      new Date(response.first_publication_date),
+      'ee MMM yyy',
+      {
+        locale: ptBR,
+      }
+    ),
+    data: {
+      title: RichText.asText(response.data.title),
+      banner: {
+        url: response.data.banner.url,
+      },
+      author: response.data.author,
+      content,
+    },
+  };
+
+  return {
+    props: {
+      post,
+    },
+  };
+};
