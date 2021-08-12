@@ -1,6 +1,15 @@
 .container {
   max-width: 720px;
   margin: 5rem auto 0;
+
+  > h1 {
+    cursor: pointer;
+
+    margin-top: 4rem;
+    color: var(--highlight);
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
 }
 
 .posts {
@@ -10,7 +19,7 @@
   flex-direction: column;
 
   a {
-    
+
     h1 {
       font-size: 1.75rem;
       font-weight: bold;
@@ -42,7 +51,7 @@
     }
 
     & + a {
-      margin: 4rem 0 3rem;
+      margin-top: 4rem;
     }
 
     .icon {

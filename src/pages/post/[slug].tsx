@@ -1,16 +1,20 @@
 import { FiCalendar, FiUser, FiClock } from 'react-icons/fi';
 
-import { GetStaticPaths, GetStaticProps } from 'next';
 import Head from 'next/head';
-import { ptBR } from 'date-fns/locale';
+import { GetStaticPaths, GetStaticProps } from 'next';
+
 import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
 import { RichText } from 'prismic-dom';
 import Prismic from '@prismicio/client';
+
+import { useRouter } from 'next/router';
 import Header from '../../components/Header';
 import { getPrismicClient } from '../../services/prismic';
 
-import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
+// import commonStyles from '../../styles/common.module.scss';
 
 interface Post {
   first_publication_date: string | null;
@@ -34,19 +38,17 @@ interface PostProps {
 }
 
 export default function Post({ post }: PostProps): JSX.Element {
+  const router = useRouter();
   const { data } = post;
-  // const posts = data.content.map(postI => {
-  //   return {
-  //     heading: RichText.asText(postI.heading),
-  //     body: RichText.asHtml(postI.body),
-  //   };
-  // });
 
-  console.log(data.content)
+  if (router.isFallback) {
+    return <div>Carregando...</div>;
+  }
+
   return (
     <>
       <Head>
-        <title> | spacetravelling</title>
+        <title>{data.title} | spacetravelling</title>
       </Head>
       <Header />
       <main className={styles.container}>
@@ -66,9 +68,12 @@ export default function Post({ post }: PostProps): JSX.Element {
               <FiClock className={styles.icon} /> 4 min
             </p>
           </div>
-          <article>
-            {/* <div dangerouslySetInnerHTML={{ _html: data.content }}> */}
-          </article>
+          {data.content.map(richtext => (
+            <article key={richtext.heading}>
+              <h1>{richtext.heading}</h1>
+              <div dangerouslySetInnerHTML={{ __html: richtext.body.text }} />
+            </article>
+          ))}
         </section>
       </main>
     </>
@@ -77,13 +82,18 @@ export default function Post({ post }: PostProps): JSX.Element {
 
 export const getStaticPaths: GetStaticPaths = async () => {
   const prismic = getPrismicClient();
-  // const posts = await prismic.query(
-  //   Prismic.Predicates.at('document.type', 'posts')
-  // );
+  const posts = await prismic.query(
+    Prismic.Predicates.at('document.type', 'posts')
+  );
 
+  const slug = posts.results.map(post => String(post.uid));
+
+  const paths = slug.map(slugPath => ({
+    params: { slug: slugPath },
+  }));
   return {
-    paths: [{ params: { slug: '/post/mapas-com-react-usando-leaflet' } }],
-    fallback: 'blocking',
+    paths,
+    fallback: true,
   };
 };
 
@@ -91,9 +101,14 @@ export const getStaticProps: GetStaticProps = async context => {
   const { slug } = context.params;
 
   const prismic = getPrismicClient();
-  const response = await prismic.getByUID('posts', slug.toString(), {});
+  const response = await prismic.getByUID('posts', String(slug), {});
 
-  const content = response.data.content.map(item => RichText.asHtml(item.body));
+  const content = response.data.content.map(item => ({
+    heading: item.heading,
+    body: {
+      text: RichText.asHtml(item.body),
+    },
+  }));
 
   const post = {
     first_publication_date: format(
@@ -117,5 +132,6 @@ export const getStaticProps: GetStaticProps = async context => {
     props: {
       post,
     },
+    revalidate: 60 * 60, // 1 hour
   };
 };
