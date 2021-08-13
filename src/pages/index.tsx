@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { GetStaticProps } from 'next';
 
+import { RichText } from 'prismic-dom';
 import Prismic from '@prismicio/client';
 import { FiCalendar, FiUser } from 'react-icons/fi';
 
@@ -9,7 +10,7 @@ import Head from 'next/head';
 import { useState } from 'react';
 
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
+import ptBR from 'date-fns/locale/pt-BR';
 
 import styles from './home.module.scss';
 // import commonStyles from '../styles/common.module.scss';
@@ -42,6 +43,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
 
   async function loadNewPosts(): Promise<void> {
     const data = await fetch(nextPage).then(response => response.json());
+    const post = data.results[0];
 
     if (data.next_page) {
       setNextPage(data.next_page);
@@ -49,23 +51,17 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
       setNextPage(null);
     }
 
-    const loadedPosts = data.results.map(post => ({
+    const loadedPosts = {
       uid: post.uid,
-      first_publication_date: format(
-        new Date(post.first_publication_date),
-        'ee MMM yyy',
-        {
-          locale: ptBR,
-        }
-      ),
+      first_publication_date: post.first_publication_date,
       data: {
-        title: post.data.title[0].text,
+        title: post.data.title,
         subtitle: post.data.subtitle,
         author: post.data.author,
       },
-    }));
+    };
 
-    setNewPosts([...posts, loadedPosts[0]]);
+    setNewPosts([...posts, loadedPosts]);
   }
   return (
     <>
@@ -73,7 +69,7 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
         <title>Home | spacetravelling</title>
       </Head>
       <main className={styles.container}>
-        <img src="/Logo.svg" alt="Logo" />
+        <img src="/Logo.svg" alt="logo" />
         <div className={styles.posts}>
           {posts.map(post => (
             <Link key={post.uid} href={`/post/${post.uid}`}>
@@ -82,7 +78,9 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
                 <p>{post.data.subtitle}</p>
                 <time>
                   <FiCalendar className={styles.icon} />
-                  {post.first_publication_date}
+                  {format(new Date(post.first_publication_date), 'dd MMM yyy', {
+                    locale: ptBR,
+                  })}
                 </time>
                 <div>
                   <FiUser className={styles.icon} />
@@ -92,13 +90,9 @@ export default function Home({ postsPagination }: HomeProps): JSX.Element {
             </Link>
           ))}
         </div>
-        {nextPage ? (
-          // eslint-disable-next-line jsx-a11y/click-events-have-key-events
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
-          <h1 onClick={() => loadNewPosts()}>Carregar mais posts</h1>
-        ) : (
-          ''
-        )}
+        <button type="button" onClick={loadNewPosts}>
+          {nextPage ? 'Carregar mais posts' : ''}
+        </button>
       </main>
     </>
   );
@@ -108,22 +102,16 @@ export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
 
   const postsResponse = await prismic.query(
-    Prismic.Predicates.at('document.type', 'posts'),
+    [Prismic.Predicates.at('document.type', 'posts')],
     { pageSize: 1 }
   );
 
   const { next_page } = postsResponse;
   const results = postsResponse.results.map(post => ({
     uid: post.uid,
-    first_publication_date: format(
-      new Date(post.first_publication_date),
-      'ee MMM yyy',
-      {
-        locale: ptBR,
-      }
-    ),
+    first_publication_date: post.first_publication_date,
     data: {
-      title: post.data.title[0].text,
+      title: post.data.title,
       subtitle: post.data.subtitle,
       author: post.data.author,
     },
@@ -138,6 +126,5 @@ export const getStaticProps: GetStaticProps = async () => {
     props: {
       postsPagination,
     },
-    revalidate: 60 * 60, // 1 hour
   };
 };

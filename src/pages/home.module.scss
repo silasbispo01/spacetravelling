@@ -2,13 +2,15 @@
   max-width: 720px;
   margin: 5rem auto 0;
 
-  > h1 {
+  > button {
     cursor: pointer;
 
     margin-top: 4rem;
     color: var(--highlight);
     font-size: 1.25rem;
     font-weight: 700;
+    background: none;
+    border: none;
   }
 }
 
